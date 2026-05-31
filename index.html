@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Will You Go On A Date With Me?</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:linear-gradient(135deg,#ffd6e7,#fff0f6);
+    overflow-x:hidden;
+    min-height:100vh;
+}
+
+.screen{
+    min-height:100vh;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:20px;
+}
+
+.screen.active{
+    display:flex;
+}
+
+.hero{
+    font-size:120px;
+    margin-bottom:20px;
+}
+
+h1{
+    font-size:clamp(28px,4vw,48px);
+    margin-bottom:25px;
+    color:#222;
+}
+
+.buttons{
+    display:flex;
+    gap:20px;
+    position:relative;
+}
+
+button{
+    border:none;
+    border-radius:14px;
+    cursor:pointer;
+    transition:.25s;
+    font-weight:bold;
+}
+
+#yesBtn{
+    background:#ff4d6d;
+    color:white;
+    padding:16px 40px;
+    font-size:24px;
+}
+
+#noBtn{
+    background:#d9d9d9;
+    color:#222;
+    padding:16px 40px;
+    font-size:24px;
+    position:relative;
+}
+
+#continueBtn,
+#submitBtn,
+#shareBtn{
+    background:#ff4d6d;
+    color:white;
+    padding:14px 30px;
+    font-size:18px;
+    margin-top:20px;
+}
+
+.form{
+    width:100%;
+    max-width:500px;
+}
+
+.form label{
+    display:block;
+    text-align:left;
+    margin-top:16px;
+    margin-bottom:6px;
+    font-weight:bold;
+}
+
+.form input,
+.form select{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #ccc;
+}
+
+.success-emoji{
+    font-size:110px;
+    margin-bottom:15px;
+}
+
+.final-image{
+    font-size:140px;
+}
+
+.language{
+    position:fixed;
+    top:15px;
+    right:15px;
+    z-index:1000;
+}
+
+.language select{
+    padding:8px;
+    border-radius:8px;
+}
+
+.confetti{
+    position:fixed;
+    width:10px;
+    height:10px;
+    pointer-events:none;
+    animation:fall 3s linear forwards;
+}
+
+@keyframes fall{
+    from{
+        transform:translateY(-100px) rotate(0deg);
+        opacity:1;
+    }
+    to{
+        transform:translateY(120vh) rotate(720deg);
+        opacity:0;
+    }
+}
+
+.share-link{
+    margin-top:15px;
+    word-break:break-all;
+    max-width:500px;
+    color:#555;
+}
+</style>
+</head>
+<body>
+
+<div class="language">
+    <select id="lang">
+        <option value="en">English</option>
+        <option value="es">Español</option>
+        <option value="ru">Русский</option>
+    </select>
+</div>
+
+<!-- Screen 1 -->
+<div id="screen1" class="screen active">
+
+    <div class="hero">😺</div>
+
+    <h1 id="question">
+        Will you go on a date with me?
+    </h1>
+
+    <div class="buttons">
+        <button id="yesBtn">YES</button>
+        <button id="noBtn">NO</button>
+    </div>
+
+</div>
+
+<!-- Screen 2 -->
+<div id="screen2" class="screen">
+
+    <div class="success-emoji">🎉</div>
+
+    <h1 id="acceptedText">
+        Wait... You actually said YES?!
+    </h1>
+
+    <button id="continueBtn">
+        Continue
+    </button>
+
+</div>
+
+<!-- Screen 3 -->
+<div id="screen3" class="screen">
+
+    <h1 id="formTitle">
+        Let's plan our date ❤️
+    </h1>
+
+    <div class="form">
+
+        <label id="dateLabel">Choose date</label>
+        <input type="date">
+
+        <label id="placeLabel">Choose place</label>
+        <input
+            type="text"
+            placeholder="Restaurant, park, cinema">
+
+        <label id="cuisineLabel">Favorite cuisine</label>
+
+        <select>
+            <option>Italian</option>
+            <option>Japanese</option>
+            <option>Spanish</option>
+            <option>Mexican</option>
+            <option>French</option>
+        </select>
+
+        <button id="submitBtn">
+            Confirm
+        </button>
+
+    </div>
+
+</div>
+
+<!-- Screen 4 -->
+<div id="screen4" class="screen">
+
+    <div class="final-image">💐🍫</div>
+
+    <h1 id="thanksText">
+        Thank you ❤️
+    </h1>
+
+    <button id="shareBtn">
+        Share with friends
+    </button>
+
+    <div class="share-link" id="shareLink"></div>
+
+</div>
+
+<script>
+
+const translations = {
+
+    en:{
+        question:"Will you go on a date with me?",
+        yes:"YES",
+        no:"NO",
+        accepted:"Wait... You actually said YES?!",
+        continue:"Continue",
+        plan:"Let's plan our date ❤️",
+        date:"Choose date",
+        place:"Choose place",
+        cuisine:"Favorite cuisine",
+        confirm:"Confirm",
+        thanks:"Thank you ❤️",
+        share:"Share with friends"
+    },
+
+    es:{
+        question:"¿Quieres salir conmigo?",
+        yes:"SÍ",
+        no:"NO",
+        accepted:"Espera... ¿De verdad dijiste SÍ?",
+        continue:"Continuar",
+        plan:"Planeemos nuestra cita ❤️",
+        date:"Elige una fecha",
+        place:"Elige un lugar",
+        cuisine:"Tu cocina favorita",
+        confirm:"Confirmar",
+        thanks:"Gracias ❤️",
+        share:"Compartir con amigos"
+    },
+
+    ru:{
+        question:"Ты пойдёшь со мной на свидание?",
+        yes:"ДА",
+        no:"НЕТ",
+        accepted:"Подожди... Ты правда сказала ДА?!",
+        continue:"Продолжить",
+        plan:"Давай спланируем свидание ❤️",
+        date:"Выберите дату",
+        place:"Выберите место",
+        cuisine:"Любимая кухня",
+        confirm:"Подтвердить",
+        thanks:"Спасибо ❤️",
+        share:"Поделиться с друзьями"
+    }
+
+};
+
+const langSelect = document.getElementById("lang");
+
+function updateLanguage(lang){
+
+    const t = translations[lang];
+
+    document.getElementById("question").textContent=t.question;
+    document.getElementById("yesBtn").textContent=t.yes;
+    document.getElementById("noBtn").textContent=t.no;
+    document.getElementById("acceptedText").textContent=t.accepted;
+    document.getElementById("continueBtn").textContent=t.continue;
+    document.getElementById("formTitle").textContent=t.plan;
+    document.getElementById("dateLabel").textContent=t.date;
+    document.getElementById("placeLabel").textContent=t.place;
+    document.getElementById("cuisineLabel").textContent=t.cuisine;
+    document.getElementById("submitBtn").textContent=t.confirm;
+    document.getElementById("thanksText").textContent=t.thanks;
+    document.getElementById("shareBtn").textContent=t.share;
+}
+
+langSelect.addEventListener("change",(e)=>{
+    updateLanguage(e.target.value);
+});
+
+updateLanguage("en");
+
+const yesBtn=document.getElementById("yesBtn");
+const noBtn=document.getElementById("noBtn");
+
+let yesScale=1;
+let noScale=1;
+
+function moveNoButton(){
+
+    const maxX=window.innerWidth-150;
+    const maxY=window.innerHeight-100;
+
+    const x=Math.random()*maxX;
+    const y=Math.random()*maxY;
+
+    noBtn.style.position="fixed";
+    noBtn.style.left=x+"px";
+    noBtn.style.top=y+"px";
+
+    yesScale+=0.12;
+    noScale-=0.10;
+
+    yesBtn.style.transform=`scale(${yesScale})`;
+
+    noBtn.style.transform=
+        `scale(${Math.max(noScale,0.3)})`;
+}
+
+noBtn.addEventListener("mouseover",moveNoButton);
+noBtn.addEventListener("click",moveNoButton);
+
+function showScreen(id){
+
+    document
+      .querySelectorAll(".screen")
+      .forEach(s=>s.classList.remove("active"));
+
+    document
+      .getElementById(id)
+      .classList.add("active");
+}
+
+function launchConfetti(){
+
+    for(let i=0;i<150;i++){
+
+        const confetti=document.createElement("div");
+
+        confetti.className="confetti";
+
+        confetti.style.left=
+            Math.random()*window.innerWidth+"px";
+
+        confetti.style.background=
+            `hsl(${Math.random()*360},100%,50%)`;
+
+        confetti.style.animationDuration=
+            (Math.random()*2+2)+"s";
+
+        document.body.appendChild(confetti);
+
+        setTimeout(()=>{
+            confetti.remove();
+        },4000);
+    }
+}
+
+yesBtn.addEventListener("click",()=>{
+
+    showScreen("screen2");
+    launchConfetti();
+
+});
+
+document
+.getElementById("continueBtn")
+.addEventListener("click",()=>{
+
+    showScreen("screen3");
+
+});
+
+document
+.getElementById("submitBtn")
+.addEventListener("click",()=>{
+
+    showScreen("screen4");
+
+});
+
+const referral =
+Math.random()
+.toString(36)
+.substring(2,8);
+
+const shareUrl =
+location.origin +
+location.pathname +
+"?from=" +
+referral;
+
+document
+.getElementById("shareLink")
+.textContent=shareUrl;
+
+document
+.getElementById("shareBtn")
+.addEventListener("click",async()=>{
+
+    if(navigator.share){
+
+        try{
+            await navigator.share({
+                title:"Date Invitation",
+                text:"Try this 😄",
+                url:shareUrl
+            });
+        }catch(e){}
+    }
+    else{
+
+        navigator.clipboard.writeText(
+            shareUrl
+        );
+
+        alert("Link copied!");
+    }
+
+});
+</script>
+
+</body>
+</html>
