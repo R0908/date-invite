@@ -8,7 +8,10 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7fIc9wUkpmVaC8wTlKH3U7uUFAZhL7Aw"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://nominatim.openstreetmap.org/reverse?format=json"></script>
 
 <style>
 *{
@@ -163,6 +166,8 @@ button{
     border-radius:10px;
     margin-top:10px;
     margin-bottom:15px;
+    border:2px solid #ff4d6d;
+    z-index:10;
 }
 
 .map-info{
@@ -182,6 +187,12 @@ button{
     color: #ff4d6d;
     font-size: 14px;
     margin-top: 5px;
+}
+
+.leaflet-popup-content-wrapper {
+    background: #ff4d6d;
+    color: white;
+    border-radius: 10px;
 }
 </style>
 </head>
@@ -408,75 +419,76 @@ dateInput.addEventListener("change", function() {
     }
 });
 
-// Google Map setup
+// Leaflet Map setup
 let map;
 let marker;
 let selectedLat = 48.8566;
 let selectedLng = 2.3522;
 let selectedPlace = "Paris, France";
+let mapInitialized = false;
 
 function initMap() {
-    const europeCenter = { lat: 48.8566, lng: 2.3522 };
+    if (mapInitialized) return;
+    mapInitialized = true;
     
-    map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 4,
-        center: europeCenter,
-        restriction: {
-            latLngBounds: {
-                north: 70,
-                south: 35,
-                east: 40,
-                west: -10
-            },
-            strictBounds: true
-        }
-    });
+    const europeCenter = [48.8566, 2.3522];
+    
+    map = L.map("map").setView(europeCenter, 4);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 19,
+        minZoom: 2
+    }).addTo(map);
 
     // Add click listener to map
-    map.addListener("click", (e) => {
-        placeMarker(e.latLng);
+    map.on("click", (e) => {
+        placeMarker(e.latlng.lat, e.latlng.lng);
     });
 
     // Add initial marker
-    placeMarker(new google.maps.LatLng(selectedLat, selectedLng));
+    placeMarker(selectedLat, selectedLng);
 }
 
-function placeMarker(location) {
-    selectedLat = location.lat();
-    selectedLng = location.lng();
+function placeMarker(lat, lng) {
+    selectedLat = lat;
+    selectedLng = lng;
 
     if (marker) {
-        marker.setPosition(location);
-    } else {
-        marker = new google.maps.Marker({
-            position: location,
-            map: map,
-            title: "Meeting point"
-        });
+        map.removeLayer(marker);
     }
 
-    // Get place name from coordinates
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ location: location }, (results, status) => {
-        if (status === "OK" && results[0]) {
-            selectedPlace = results[0].formatted_address;
+    marker = L.marker([lat, lng], {
+        title: "Meeting point"
+    }).addTo(map)
+    .bindPopup("📍 Meeting Point")
+    .openPopup();
+
+    // Get place name from coordinates using Nominatim (free reverse geocoding)
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.address) {
+                const city = data.address.city || data.address.town || data.address.village || "";
+                const country = data.address.country || "";
+                selectedPlace = city && country ? `${city}, ${country}` : country || "Selected Location";
+            } else {
+                selectedPlace = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            }
             document.getElementById("placeName").value = selectedPlace;
             document.getElementById("mapInfo").textContent = 
                 translations[currentLang].locationSelected + selectedPlace;
-        }
-    });
+        })
+        .catch(() => {
+            selectedPlace = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            document.getElementById("placeName").value = selectedPlace;
+            document.getElementById("mapInfo").textContent = 
+                translations[currentLang].locationSelected + selectedPlace;
+        });
 
     document.getElementById("latitude").value = selectedLat;
     document.getElementById("longitude").value = selectedLng;
 }
-
-// Initialize map when screen 3 is shown
-const originalShowScreen = showScreen;
-
-// Map initialization
-setTimeout(() => {
-    initMap();
-}, 1000);
 
 const yesBtn=document.getElementById("yesBtn");
 const noBtn=document.getElementById("noBtn");
@@ -518,11 +530,15 @@ function showScreen(id){
       .getElementById(id)
       .classList.add("active");
 
-    // Trigger map resize when screen 3 is shown
-    if (id === "screen3" && map) {
+    // Initialize map when screen 3 is shown
+    if (id === "screen3") {
         setTimeout(() => {
-            google.maps.event.trigger(map, "resize");
-            map.setCenter({ lat: selectedLat, lng: selectedLng });
+            if (!mapInitialized) {
+                initMap();
+            } else if (map) {
+                map.invalidateSize();
+                map.setView([selectedLat, selectedLng], 4);
+            }
         }, 100);
     }
 }
@@ -648,12 +664,6 @@ window.addEventListener("load", () => {
         
         if (cuisine) {
             document.getElementById("cuisineSelect").value = cuisine;
-        }
-        
-        if (map && marker) {
-            const location = new google.maps.LatLng(lat, lng);
-            placeMarker(location);
-            map.setCenter(location);
         }
     }
 });
